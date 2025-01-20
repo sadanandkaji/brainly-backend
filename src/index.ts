@@ -1,14 +1,15 @@
 import express from "express"
 import jwt from "jsonwebtoken"
 import {string, z} from "zod"
-import bcrypt from "bcrypt"
-import {usermodel,contentmodel} from "./db"
+import bcrypt, { hash } from "bcrypt"
+import {usermodel,contentmodel, linkmodel} from "./db"
 
 
 const app=express();
 app.use(express.json());
 import {JWT_SECRET } from "./config"
 import { middleware } from "./middleware"
+import { random } from "./util"
 
 
 
@@ -139,15 +140,71 @@ app.delete("/api/v1/content", middleware,async (req,res)=>{
 
 
 })
-app.post("/api/v1/brain/share",middleware,(req,res)=>{
+app.post("/api/v1/brain/share",middleware,async (req,res)=>{
+  const share=req.body.share;
+  if(share){
+    await  linkmodel.create({
+      //@ts-ignore
+     userid: req.userid,
+     //@ts-ignore
+  hash: random(10),
+    })
+  }else{
+   await linkmodel.deleteOne({
+      //@ts-ignore
+      userid:req.userid
+    })
+  }
+
+  res.json({
+    message:hash
+  })
+
+})
+
+app.get("/api/v1/brain/:sharelink",async (req,res)=>{
+  const hashed=req.params.sharelink
+  const linku=await linkmodel.findOne({
+    hash: hashed
+  })
   
 
+  if(!linku){
+    res.status(404).json({
+      message:"wrong link"
+    })
+       return;
+  }
+
+  
+  const user= await usermodel.findOne({
+    //@ts-ignore
+    _id:linku.userid
+  })
+  if(!user){
+    res.json({
+      message:"qwe"
+    })
+  }
+  
+  const content= await contentmodel.findOne({
+    //@ts-ignore
+      userid:linku.userid
+  })
+  if(!content){
+    res.json({
+      message:"content not found"
+    })
+    return;
+  }
+  
+  res.json({
+    //@ts-ignore
+    username:user.username,
+    content:content
+  })
+  
 })
 
-app.post("/api/v1/brain/:sharelink",(req,res)=>{
-
-
-
-})
 
 app.listen(3000);
