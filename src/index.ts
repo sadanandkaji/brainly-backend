@@ -3,10 +3,13 @@ import jwt from "jsonwebtoken"
 import {string, z} from "zod"
 import bcrypt, { hash } from "bcrypt"
 import {usermodel,contentmodel, linkmodel} from "./db"
-
+import cors from "cors"
 
 const app=express();
+
+app.use(cors())
 app.use(express.json());
+
 import {JWT_SECRET } from "./config"
 import { middleware } from "./middleware"
 import { random } from "./util"
@@ -48,7 +51,7 @@ try{
   errorthrown=true;
 }
 
-if (!errorthrown){
+if (errorthrown){
   res.status(200).json({
     message:"signed up successfully"
   })
@@ -83,6 +86,7 @@ const password=req.body.password;
           id:users._id.toString()
           //@ts-ignore
      },JWT_SECRET);
+     console.log(token)
      res.json({
        token:token
       })
