@@ -14,52 +14,51 @@ import {JWT_SECRET } from "./config"
 import { middleware } from "./middleware"
 import { random } from "./util"
 
+// @ts-ignore
 
+app.post("/api/v1/signup", async (req, res) => {
+  const requiredbody = z.object({
+    username: z.string().min(3).max(10),
+    password: z
+      .string()
+      .min(8)
+      .max(20)
+      .refine(
+        (value) =>
+          /[a-z]/.test(value) &&
+          /[A-Z]/.test(value) &&
+          /\d/.test(value) &&
+          /[!@#$%^&*(),.?":{}|<>]/.test(value),
+        { message: "Password must contain lowercase, uppercase, digit, and special character." }
+      ),
+  });
 
-app.post("/api/v1/signup", async (req,res)=>{
- const requiredbody=z.object({
-    username:z.string().min(3).max(10),
-    password:z.string().min(8).max(20)
-    .refine((value)=> /[a-z]/.test(value) &&
-   /[A-Z]/.test(value) && /\d/.test(value) && /[!@#$%^&*(),.?":{}|<>]/.test(value))
- })
+  const requireddata = requiredbody.safeParse(req.body);
 
- const requireddata=requiredbody.safeParse(req.body)
+  if (!requireddata.success) {
+    return res.status(400).json({
+      message: "Incorrect format",
+      errors: requireddata.error.errors,
+    });
+  }
 
- if(!requireddata.success){
-  res.status(400).json({
-    message:"incorrct format",
-    error:requireddata.error.errors
-    
-  })
-}
- 
-const  {username,password}=req.body
+  const { username, password } = req.body;
 
-let errorthrown=false
-try{
-  const hashedpassword=await bcrypt.hash(password,2)
+  try {
+    const hashedpassword = await bcrypt.hash(password, 10);
+    await usermodel.create({ username, password: hashedpassword });
 
-  await usermodel.create({
-    username:username,
-    password:hashedpassword
-  })
-}catch(e){
-  res.json({
-    message:"user already exits"
-  })
-  errorthrown=true;
-}
+    res.status(201).json({ message: "Signed up successfully" });
+  } catch (e) {
+    // @ts-ignore
+    if (e.code === "P2002") { // Example: Handle unique constraint errors (e.g., Prisma)
+      res.status(409).json({ message: "User already exists" });
+    } else {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+});
 
-if (errorthrown){
-  res.status(200).json({
-    message:"signed up successfully"
-  })
-}
-
-}
-
-)
 
 app.post("/api/v1/signin", async (req,res)=>{
 
@@ -211,4 +210,4 @@ app.get("/api/v1/brain/:sharelink",async (req,res)=>{
 })
 
 
-app.listen(3000);
+app.listen(4000);
