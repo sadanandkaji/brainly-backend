@@ -13,12 +13,13 @@ const userschema=new Schema({
 const contentschema=new Schema({
    type:String,
    linK:String,
+   title:String,
    userid:[{type:mongoose.Types.ObjectId,ref:"user"}],
    contentid:{type:mongoose.Types.ObjectId,ref:"content"},
    tag:[{type:mongoose.Types.ObjectId,ref:"tag"}],
 })
 const linkschema=new Schema({
-  hash:String,
+  hashed:String,
   userid:{type:mongoose.Types.ObjectId,ref:"user",require:true,unique:true},
   
 })
